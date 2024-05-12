@@ -5,10 +5,8 @@ import { AiOutlineSend } from "react-icons/ai";
 import { CgProfile } from "react-icons/cg";
 import { FaPhotoVideo, FaStopCircle } from "react-icons/fa";
 import { IoMicOutline } from "react-icons/io5";
-import io, { Socket } from "socket.io-client";
 import { useRecordVoice } from "@/hook/recordVoice/useRecordVoice";
-
-const socket: Socket = io("http://localhost:3001"); // Replace with your server URL
+import { socket } from "../soket";
 
 const Index: React.FC = () => {
   const [messages, setMessages] = useState<string[]>([]);
@@ -16,25 +14,33 @@ const Index: React.FC = () => {
   const [serverStatus, setServerStatus] = useState<string>("connecting...");
   const [upload, setUpload] = useState<boolean>(false);
   const { startRecording, stopRecording, recording } = useRecordVoice();
-  //soket showing
-  useEffect(() => {
-    if (socket.connected) {
-      setServerStatus("connected");
-    } else if (!socket.connected) {
-      setServerStatus("disconnected");
-    } else {
-      setServerStatus("onnecting...");
-    }
-  }, [socket]);
+
+  const [isConnected, setIsConnected] = useState(socket.connected);
+  const [fooEvents, setFooEvents] = useState([]);
 
   useEffect(() => {
-    // Listen for incoming messages
-    socket.on("chat message", (message: string) => {
-      setMessages((prevMessages) => [...prevMessages, message]);
-    });
+    function onConnect() {
+      setIsConnected(true);
+      setServerStatus("connected");
+    }
+
+    function onDisconnect() {
+      setIsConnected(false);
+      setServerStatus("discounected");
+    }
+
+    function onFooEvent(value: any) {
+      setFooEvents((previous: any) => [...previous, value]);
+    }
+
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+    socket.on("foo", onFooEvent);
 
     return () => {
-      socket.disconnect();
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+      socket.off("foo", onFooEvent);
     };
   }, []);
   // useEffect(() => {
